@@ -102,6 +102,24 @@ func (r *Render) JSON(v any) *Render {
 	return r
 }
 
+// JSONP marshals 'v' to JSON, automatically escaping HTML and setting the
+// Content-Type as application/javascript.
+func (r *Render) JSONP(callback string, v any) *Render {
+	buf := new(bytes.Buffer)
+	enc := JSONEncoder(buf)
+	enc.SetEscapeHTML(true)
+	if err := enc.Encode(v); err != nil {
+		http.Error(r.w, err.Error(), http.StatusInternalServerError)
+		return r
+	}
+
+	r.w.Header().Set(HeaderContentType, MIMEApplicationJavaScriptCharsetUTF8)
+	_, _ = r.w.Write([]byte(callback + "("))
+	_, _ = r.w.Write(buf.Bytes())
+	_, _ = r.w.Write([]byte(");"))
+	return r
+}
+
 // XML marshals 'v' to XML, setting the Content-Type as application/xml. It
 // will automatically prepend a generic XML header (see encoding/xml.Header) if
 // one is not found in the first 100 bytes of 'v'.
