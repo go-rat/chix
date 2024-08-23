@@ -1,24 +1,26 @@
-# Chi Binding
+# Chix
 
-This is a fork and modified version of Fiber for Chi router.
+This package provides some methods that Chi lacks, such as binding and rendering, and it's a lightweight package that doesn't have any dependencies.
 
-Current Version [260c5e5406874e6d9a48ec2ef2c862d64a530e0b](https://github.com/gofiber/fiber/commit/260c5e5406874e6d9a48ec2ef2c862d64a530e0b)
-
-## Support Binders
-
-- [Form](form.go)
-- [Query](query.go)
-- [URI](uri.go)
-- [Header](header.go)
-- [Cookie](cookie.go)
-- [JSON](json.go)
-- [XML](xml.go)
+A lot of the code in this package comes from [Fiber](https://github.com/gofiber/fiber), the last synchronized version: [260c5e5406874e6d9a48ec2ef2c862d64a530e0b](https://github.com/gofiber/fiber/commit/260c5e5406874e6d9a48ec2ef2c862d64a530e0b).
 
 ## Guides
 
-### Binding into the Struct
+### Binding
 
-Fiber supports binding into the struct with [gorilla/schema](https://github.com/gorilla/schema). Here's an example:
+#### Support Binders
+
+- [Form](binder/form.go)
+- [Query](binder/query.go)
+- [URI](binder/uri.go)
+- [Header](binder/header.go)
+- [Cookie](binder/cookie.go)
+- [JSON](binder/json.go)
+- [XML](binder/xml.go)
+
+#### Binding into the Struct
+
+Chix supports binding into the struct with [gorilla/schema](https://github.com/gorilla/schema). Here's an example:
 
 ```go
 // Field names should start with an uppercase letter
@@ -27,10 +29,10 @@ type Person struct {
     Pass string `json:"pass" xml:"pass" form:"pass"`
 }
 
-app.Post("/", func(w http.ResponseWriter, r *http.Request) {
+router.Post("/", func(w http.ResponseWriter, r *http.Request) {
     p := new(Person)
 
-    if err := binding.New(r).Body(p); err != nil {
+    if err := chix.NewBind(r).Body(p); err != nil {
         return err
     }
 
@@ -53,15 +55,15 @@ app.Post("/", func(w http.ResponseWriter, r *http.Request) {
 // curl -X POST "http://localhost:3000/?name=john&pass=doe"
 ```
 
-### Binding into the Map
+#### Binding into the Map
 
-Fiber supports binding into the `map[string]string` or `map[string][]string`. Here's an example:
+Chix supports binding into the `map[string]string` or `map[string][]string`. Here's an example:
 
 ```go
-app.Get("/", func(w http.ResponseWriter, r *http.Request) {
+router.Get("/", func(w http.ResponseWriter, r *http.Request) {
     p := make(map[string][]string)
 
-    if err := binding.New(r).Query(p); err != nil {
+    if err := chix.NewBind(r).Query(p); err != nil {
         return err
     }
 
@@ -76,32 +78,32 @@ app.Get("/", func(w http.ResponseWriter, r *http.Request) {
 // curl "http://localhost:3000/?name=john&pass=doe&products=shoe,hat"
 ```
 
-### Behaviors of Should/Must
+### Render
 
-Normally, Fiber returns binder error directly. However; if you want to handle it automatically, you can prefer `Must()`.
+#### Support Methods
 
-If there's an error it'll return error and 400 as HTTP status. Here's an example for it:
+- Status
+- Header
+- Cookie
+- WithoutCookie
+- Redirect
+- PlainText
+- Data
+- HTML
+- JSON
+- XML
+- NoContent
+- EventStream
+- File
+- Download
+- Flush
+
+#### Render a JSON
 
 ```go
-// Field names should start with an uppercase letter
-type Person struct {
-    Name string `json:"name,required"`
-    Pass string `json:"pass"`
-}
-
-app.Get("/", func(w http.ResponseWriter, r *http.Request) {
-    p := new(Person)
-
-    if err := binding.New(r).Must().JSON(p); err != nil {
-        return err 
-        // Status code: 400 
-        // Response: Bad request: name is empty
-    }
-
-    // ...
+router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+    return chix.NewRender(w).JSON(chix.M{
+        "hello": "world",
+    })
 })
-
-// Run tests with the following curl command:
-
-// curl -X GET -H "Content-Type: application/json" --data "{\"pass\":\"doe\"}" localhost:3000
 ```

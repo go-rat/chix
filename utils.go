@@ -1,6 +1,14 @@
-package binding
+package chix
 
-import "strings"
+import (
+	"strings"
+	"unicode"
+)
+
+// QuoteEscape escapes the quotes in the string.
+func QuoteEscape(s string) string {
+	return strings.NewReplacer("\\", "\\\\", `"`, "\\\"").Replace(s)
+}
 
 // ParseVendorSpecificContentType check if content type is vendor specific and
 // if it is parsable to any known types. If its not vendor specific then returns
@@ -28,4 +36,14 @@ func ParseVendorSpecificContentType(cType string) string {
 	}
 
 	return cType[0:slashIndex+1] + parsableType
+}
+
+// IsASCII checks if the string is ASCII.
+func IsASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }

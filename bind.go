@@ -1,106 +1,65 @@
-package binding
+package chix
 
 import (
-	"encoding/json"
-	"encoding/xml"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/TheTNB/binding/binder"
-)
-
-const (
-	MIMETextXML         = "text/xml"
-	MIMEApplicationXML  = "application/xml"
-	MIMEApplicationJSON = "application/json"
-	MIMEApplicationForm = "application/x-www-form-urlencoded"
-	MIMEMultipartForm   = "multipart/form-data"
-)
-
-var (
-	JSONDecoder = json.NewDecoder
-	XMLDecoder  = xml.NewDecoder
+	"github.com/go-rat/chix/binder"
 )
 
 // Bind struct
 type Bind struct {
-	r      *http.Request
-	should bool
+	r *http.Request
 }
 
-func New(r *http.Request) *Bind {
-	return &Bind{r: r, should: true}
-}
-
-// Should To handle binder errors manually, you can prefer Should method.
-// It's default behavior of binder.
-func (b *Bind) Should() *Bind {
-	b.should = true
-
-	return b
-}
-
-// Must If you want to handle binder errors automatically, you can use Must.
-// If there's an error it'll return error and 400 as HTTP status.
-func (b *Bind) Must() *Bind {
-	b.should = false
-
-	return b
-}
-
-// Check Should/Must errors and return it by usage.
-func (b *Bind) returnErr(err error) error {
-	if !b.should {
-		return fmt.Errorf("bad request: %v", err)
-	}
-
-	return err
+// NewBind creates a new Bind instance.
+func NewBind(r *http.Request) *Bind {
+	return &Bind{r: r}
 }
 
 // Header binds the request header strings into the struct, map[string]string and map[string][]string.
 func (b *Bind) Header(out any) error {
-	return b.returnErr(binder.HeaderBinder.Bind(b.r, out))
+	return binder.HeaderBinder.Bind(b.r, out)
 }
 
 // Cookie binds the requesr cookie strings into the struct, map[string]string and map[string][]string.
 // NOTE: If your cookie is like key=val1,val2; they'll be binded as an slice if your map is map[string][]string. Else, it'll use last element of cookie.
 func (b *Bind) Cookie(out any) error {
-	return b.returnErr(binder.CookieBinder.Bind(b.r, out))
+	return binder.CookieBinder.Bind(b.r, out)
 }
 
 // Query binds the query string into the struct, map[string]string and map[string][]string.
 func (b *Bind) Query(out any) error {
-	return b.returnErr(binder.QueryBinder.Bind(b.r, out))
+	return binder.QueryBinder.Bind(b.r, out)
 }
 
 // JSON binds the body string into the struct.
 func (b *Bind) JSON(out any) error {
-	return b.returnErr(binder.JSONBinder.Bind(JSONDecoder(b.r.Body), out))
+	return binder.JSONBinder.Bind(JSONDecoder(b.r.Body), out)
 }
 
 // XML binds the body string into the struct.
 func (b *Bind) XML(out any) error {
-	return b.returnErr(binder.XMLBinder.Bind(XMLDecoder(b.r.Body), out))
+	return binder.XMLBinder.Bind(XMLDecoder(b.r.Body), out)
 }
 
 // Form binds the form into the struct, map[string]string and map[string][]string.
 func (b *Bind) Form(out any) error {
-	return b.returnErr(binder.FormBinder.Bind(b.r, out))
+	return binder.FormBinder.Bind(b.r, out)
 }
 
 // URI binds the route parameters into the struct, map[string]string and map[string][]string.
 func (b *Bind) URI(out any) error {
 	ctx := chi.RouteContext(b.r.Context())
-	return b.returnErr(binder.URIBinder.Bind(ctx.URLParams.Keys, ctx.URLParam, out))
+	return binder.URIBinder.Bind(ctx.URLParams.Keys, ctx.URLParam, out)
 }
 
 // MultipartForm binds the multipart form into the struct, map[string]string and map[string][]string.
 func (b *Bind) MultipartForm(out any) error {
-	return b.returnErr(binder.FormBinder.BindMultipart(b.r, out))
+	return binder.FormBinder.BindMultipart(b.r, out)
 }
 
 // Body binds the request body into the struct, map[string]string and map[string][]string.

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/TheTNB/binding/schema"
+	"github.com/go-rat/chix/schema"
 )
 
 // ParserConfig form decoder config for SetParserDecoder
