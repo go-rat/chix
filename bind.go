@@ -58,8 +58,13 @@ func (b *Bind) URI(out any) error {
 }
 
 // MultipartForm binds the multipart form into the struct, map[string]string and map[string][]string.
-func (b *Bind) MultipartForm(out any) error {
-	return binder.FormBinder.BindMultipart(b.r, out)
+// Parameter size is the maximum memory in bytes used to parse the form, default is 32MB.
+func (b *Bind) MultipartForm(out any, size ...int64) error {
+	if len(size) == 0 {
+		size = append(size, 32768<<10) // 32MB
+	}
+
+	return binder.FormBinder.BindMultipart(b.r, out, size[0])
 }
 
 // Body binds the request body into the struct, map[string]string and map[string][]string.

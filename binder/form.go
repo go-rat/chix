@@ -48,8 +48,8 @@ func (b *formBinding) Bind(r *http.Request, out any) error {
 	return parse(b.Name(), out, data)
 }
 
-func (b *formBinding) BindMultipart(r *http.Request, out any) error {
-	if err := r.ParseMultipartForm(32 << 20); err != nil {
+func (b *formBinding) BindMultipart(r *http.Request, out any, size int64) error {
+	if err := r.ParseMultipartForm(size); err != nil {
 		return err
 	}
 
