@@ -273,7 +273,7 @@ func (d *Decoder) decode(v reflect.Value, path string, parts []pathPart, values 
 			} else if m.IsValid {
 				u := reflect.New(elemT)
 				if m.IsSliceElementPtr {
-					u = reflect.New(reflect.PtrTo(elemT).Elem())
+					u = reflect.New(reflect.PointerTo(elemT).Elem())
 				}
 				if err := u.Interface().(encoding.TextUnmarshaler).UnmarshalText([]byte(value)); err != nil {
 					return ConversionError{
@@ -427,7 +427,7 @@ func isTextUnmarshaler(v reflect.Value) unmarshaler {
 		// encoding.TextUnmarshaler
 		m.IsSliceElement = true
 		if t = t.Elem(); t.Kind() == reflect.Ptr {
-			t = reflect.PtrTo(t.Elem())
+			t = reflect.PointerTo(t.Elem())
 			v = reflect.Zero(t)
 			m.IsSliceElementPtr = true
 			m.Unmarshaler, m.IsValid = v.Interface().(encoding.TextUnmarshaler)
