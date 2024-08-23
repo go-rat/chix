@@ -70,7 +70,7 @@ func (b *Bind) MultipartForm(out any) error {
 func (b *Bind) Body(out any) error {
 	// Get content-type
 	ctype := strings.ToLower(b.r.Header.Get("Content-Type"))
-	ctype = binder.FilterFlags(ParseVendorSpecificContentType(ctype))
+	ctype = binder.FilterFlags(parseVendorSpecificContentType(ctype))
 
 	// Parse body accordingly
 	switch ctype {

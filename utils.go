@@ -5,15 +5,15 @@ import (
 	"unicode"
 )
 
-// QuoteEscape escapes the quotes in the string.
-func QuoteEscape(s string) string {
+// quoteEscape escapes the quotes in the string.
+func quoteEscape(s string) string {
 	return strings.NewReplacer("\\", "\\\\", `"`, "\\\"").Replace(s)
 }
 
-// ParseVendorSpecificContentType check if content type is vendor specific and
+// parseVendorSpecificContentType check if content type is vendor specific and
 // if it is parsable to any known types. If its not vendor specific then returns
 // the original content type.
-func ParseVendorSpecificContentType(cType string) string {
+func parseVendorSpecificContentType(cType string) string {
 	plusIndex := strings.Index(cType, "+")
 
 	if plusIndex == -1 {
@@ -38,12 +38,13 @@ func ParseVendorSpecificContentType(cType string) string {
 	return cType[0:slashIndex+1] + parsableType
 }
 
-// IsASCII checks if the string is ASCII.
-func IsASCII(s string) bool {
+// isASCII checks if the string is ASCII.
+func isASCII(s string) bool {
 	for i := 0; i < len(s); i++ {
 		if s[i] > unicode.MaxASCII {
 			return false
 		}
 	}
+
 	return true
 }

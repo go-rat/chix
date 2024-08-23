@@ -203,8 +203,8 @@ func (r *Render) Download(filepath, filename string) *Render {
 	if r.r == nil {
 		http.Error(r.w, "chix: Download requires passing *http.Request", http.StatusInternalServerError)
 	}
-	if IsASCII(filename) {
-		r.Header(HeaderContentDisposition, `attachment; filename="`+QuoteEscape(filename)+`"`)
+	if isASCII(filename) {
+		r.Header(HeaderContentDisposition, `attachment; filename="`+quoteEscape(filename)+`"`)
 	} else {
 		r.Header(HeaderContentDisposition, `attachment; filename*=UTF-8''`+url.QueryEscape(filename))
 	}
