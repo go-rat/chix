@@ -6,6 +6,27 @@ A lot of the code in this package comes from [Fiber](https://github.com/gofiber/
 
 ## Guides
 
+### Custom Encoders and Decoders
+
+Chix supports custom JSON/XML encoders and decoders. Here's an example:
+
+```go
+import (
+    "encoding/json"
+    "encoding/xml"
+
+    "github.com/go-chi/chi/v5"
+    "github.com/go-rat/chix"
+)
+
+func init() {
+    chix.JSONEncoder = json.NewEncoder
+    chix.JSONDecoder = json.NewDecoder
+    chix.XMLEncoder = xml.NewEncoder
+    chix.XMLDecoder = xml.NewDecoder
+}
+```
+
 ### Binding
 
 #### Support Binders
@@ -102,7 +123,7 @@ router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 
 ```go
 router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-    return chix.NewRender(w).JSON(chix.M{
+	chix.NewRender(w).JSON(chix.M{
         "hello": "world",
     })
 })
