@@ -12,7 +12,7 @@ import (
 
 type SSEvent struct {
 	Event string
-	Data  []byte
+	Data  io.Reader
 	ID    string
 	Retry uint
 }
@@ -30,7 +30,9 @@ func SSEventEncode(writer io.Writer, event SSEvent) error {
 	}
 
 	buf.WriteString("data: ")
-	buf.Write(event.Data)
+	if _, err := io.Copy(buf, event.Data); err != nil {
+		return err
+	}
 	buf.WriteString("\n\n")
 
 	_, err := writer.Write(buf.Bytes())
@@ -56,7 +58,7 @@ func SSEventDecode(reader io.Reader) ([]SSEvent, error) {
 				continue
 			}
 			if len(data) > 0 {
-				event.Data = data
+				event.Data = bytes.NewReader(data)
 			}
 			if event.Event == "" {
 				event.Event = "message"
