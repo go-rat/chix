@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
+
+	"github.com/go-rat/chix/renderer"
 )
 
 // Render struct
@@ -26,109 +29,100 @@ func NewRender(w http.ResponseWriter, r ...*http.Request) *Render {
 }
 
 // Status is a warpper for WriteHeader method.
-func (r *Render) Status(status int) *Render {
+func (r *Render) Status(status int) {
 	r.w.WriteHeader(status)
-	return r
 }
 
 // Header sets the provided header key/value pair in the response.
-func (r *Render) Header(key, value string) *Render {
+func (r *Render) Header(key, value string) {
 	r.w.Header().Set(key, value)
-	return r
 }
 
 // Cookie sets a cookie in the response.
-func (r *Render) Cookie(cookie *http.Cookie) *Render {
+func (r *Render) Cookie(cookie *http.Cookie) {
 	http.SetCookie(r.w, cookie)
-	return r
 }
 
 // WithoutCookie deletes a cookie in the response.
-func (r *Render) WithoutCookie(name string) *Render {
+func (r *Render) WithoutCookie(name string) {
 	http.SetCookie(r.w, &http.Cookie{
 		Name:   name,
 		MaxAge: -1,
 	})
-	return r
 }
 
 // Redirect replies to the request with a redirect to url, which may be a path
 // relative to the request path.
-func (r *Render) Redirect(url string) *Render {
+func (r *Render) Redirect(url string) {
 	if r.r == nil {
 		http.Error(r.w, "chix: Redirect requires passing *http.Request", http.StatusInternalServerError)
+		return
 	}
 
 	http.Redirect(r.w, r.r, url, http.StatusFound)
-	return r
 }
 
 // PlainText writes a string to the response, setting the Content-Type as
 // text/plain.
-func (r *Render) PlainText(v string) *Render {
+func (r *Render) PlainText(v string) {
 	r.w.Header().Set(HeaderContentType, MIMETextPlainCharsetUTF8)
 	_, _ = r.w.Write([]byte(v))
-	return r
 }
 
 // Data writes raw bytes to the response, setting the Content-Type as
 // application/octet-stream.
-func (r *Render) Data(v []byte) *Render {
+func (r *Render) Data(v []byte) {
 	r.w.Header().Set(HeaderContentType, MIMEOctetStream)
 	_, _ = r.w.Write(v)
-	return r
 }
 
 // HTML writes a string to the response, setting the Content-Type as text/html.
-func (r *Render) HTML(v string) *Render {
+func (r *Render) HTML(v string) {
 	r.w.Header().Set(HeaderContentType, MIMETextHTMLCharsetUTF8)
 	_, _ = r.w.Write([]byte(v))
-	return r
 }
 
 // JSON marshals 'v' to JSON, automatically escaping HTML and setting the
 // Content-Type as application/json.
-func (r *Render) JSON(v any) *Render {
+func (r *Render) JSON(v any) {
 	buf := new(bytes.Buffer)
 	enc := JSONEncoder(buf)
 	enc.SetEscapeHTML(true)
 	if err := enc.Encode(v); err != nil {
 		http.Error(r.w, err.Error(), http.StatusInternalServerError)
-		return r
+		return
 	}
 
 	r.w.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 	_, _ = r.w.Write(buf.Bytes())
-	return r
 }
 
 // JSONP marshals 'v' to JSON, automatically escaping HTML and setting the
 // Content-Type as application/javascript.
-func (r *Render) JSONP(callback string, v any) *Render {
+func (r *Render) JSONP(callback string, v any) {
 	buf := new(bytes.Buffer)
 	enc := JSONEncoder(buf)
 	enc.SetEscapeHTML(true)
 	if err := enc.Encode(v); err != nil {
 		http.Error(r.w, err.Error(), http.StatusInternalServerError)
-		return r
+		return
 	}
 
 	r.w.Header().Set(HeaderContentType, MIMEApplicationJavaScriptCharsetUTF8)
 	_, _ = r.w.Write([]byte(callback + "("))
 	_, _ = r.w.Write(buf.Bytes())
 	_, _ = r.w.Write([]byte(");"))
-	return r
 }
 
 // XML marshals 'v' to XML, setting the Content-Type as application/xml. It
 // will automatically prepend a generic XML header (see encoding/xml.Header) if
 // one is not found in the first 100 bytes of 'v'.
-func (r *Render) XML(v any) *Render {
+func (r *Render) XML(v any) {
 	buf := new(bytes.Buffer)
 	enc := XMLEncoder(buf)
 	if err := enc.Encode(v); err != nil {
 		http.Error(r.w, err.Error(), http.StatusInternalServerError)
-		return r
+		return
 	}
 
 	r.w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
@@ -144,22 +138,45 @@ func (r *Render) XML(v any) *Render {
 	}
 
 	_, _ = r.w.Write(buf.Bytes())
-	return r
 }
 
 // NoContent returns a HTTP 204 "No Content" response.
-func (r *Render) NoContent() *Render {
-	return r.Status(http.StatusNoContent)
+func (r *Render) NoContent() {
+	r.Status(http.StatusNoContent)
+}
+
+// Stream sends a streaming response and returns a boolean
+// indicates "Is client disconnected in middle of stream"
+func (r *Render) Stream(step func(w io.Writer) bool) bool {
+	if r.r == nil {
+		http.Error(r.w, "chix: Stream requires passing *http.Request", http.StatusInternalServerError)
+		return false
+	}
+
+	for {
+		select {
+		case <-r.r.Context().Done():
+			return true
+		default:
+			keepOpen := step(r.w)
+			r.Flush()
+			if !keepOpen {
+				return false
+			}
+		}
+	}
 }
 
 // EventStream writes a stream of JSON objects from a channel to the response and setting the
 // Content-Type as text/event-stream.
-func (r *Render) EventStream(v any) *Render {
+func (r *Render) EventStream(v any) {
 	if r.r == nil {
-		http.Error(r.w, "chix: Redirect requires passing *http.Request", http.StatusInternalServerError)
+		http.Error(r.w, "chix: EventStream requires passing *http.Request", http.StatusInternalServerError)
+		return
 	}
 	if reflect.TypeOf(v).Kind() != reflect.Chan {
-		http.Error(r.w, fmt.Sprintf("render: event stream expects a channel, not %v", reflect.TypeOf(v).Kind()), http.StatusInternalServerError)
+		http.Error(r.w, fmt.Sprintf("chix: EventStream expects a channel, not %v", reflect.TypeOf(v).Kind()), http.StatusInternalServerError)
+		return
 	}
 
 	r.w.Header().Set(HeaderContentType, MIMEEventStreamCharsetUTF8)
@@ -184,12 +201,12 @@ func (r *Render) EventStream(v any) *Render {
 		}); chosen {
 		case 0: // equivalent to: case <-ctx.Done()
 			_, _ = r.w.Write([]byte("event: error\ndata: {\"error\":\"Server Timeout\"}\n\n"))
-			return r
+			return
 
 		default: // equivalent to: case v, ok := <-stream
 			if !ok {
 				_, _ = r.w.Write([]byte("event: EOF\n\n"))
-				return r
+				return
 			}
 
 			v := recv.Interface()
@@ -206,20 +223,43 @@ func (r *Render) EventStream(v any) *Render {
 	}
 }
 
-// File sends a file to the client.
-func (r *Render) File(filepath string) *Render {
+// SSEvent writes a Server-Sent Event to the response and setting the
+// Content-Type as text/event-stream.
+func (r *Render) SSEvent(event renderer.SSEvent) {
+	if r.r == nil {
+		http.Error(r.w, "chix: SSEvent requires passing *http.Request", http.StatusInternalServerError)
+		return
+	}
+
+	r.w.Header().Set(HeaderContentType, MIMEEventStreamCharsetUTF8)
+	r.w.Header().Set(HeaderCacheControl, "no-cache")
+
+	if r.r.ProtoMajor == 1 {
+		// An endpoint MUST NOT generate an HTTP/2 message containing connection-specific header fields.
+		// Source: RFC7540
+		r.w.Header().Set(HeaderConnection, "keep-alive")
+	}
+
+	r.w.WriteHeader(http.StatusOK)
+	_ = renderer.SSEventEncode(r.w, event)
+}
+
+// File sends a file to the response.
+func (r *Render) File(filepath string) {
 	if r.r == nil {
 		http.Error(r.w, "chix: File requires passing *http.Request", http.StatusInternalServerError)
+		return
 	}
 
 	http.ServeFile(r.w, r.r, filepath)
-	return r
 }
 
-// Download sends a file to the client prompting it to be downloaded.
-func (r *Render) Download(filepath, filename string) *Render {
+// Download sends a file to the response and prompting it to be downloaded
+// by setting the Content-Disposition header.
+func (r *Render) Download(filepath, filename string) {
 	if r.r == nil {
 		http.Error(r.w, "chix: Download requires passing *http.Request", http.StatusInternalServerError)
+		return
 	}
 	if isASCII(filename) {
 		r.Header(HeaderContentDisposition, `attachment; filename="`+quoteEscape(filename)+`"`)
@@ -228,13 +268,17 @@ func (r *Render) Download(filepath, filename string) *Render {
 	}
 
 	http.ServeFile(r.w, r.r, filepath)
-	return r
 }
 
-// Flush sends any buffered data to the client.
-func (r *Render) Flush() *Render {
+// Flush sends any buffered data to the response.
+func (r *Render) Flush() {
 	if f, ok := r.w.(http.Flusher); ok {
 		f.Flush()
 	}
-	return r
+}
+
+// Hijack returns the underlying Hijacker interface.
+func (r *Render) Hijack() (http.Hijacker, bool) {
+	h, ok := r.w.(http.Hijacker)
+	return h, ok
 }
