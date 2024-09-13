@@ -9,9 +9,16 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/go-rat/chix/renderer"
 )
+
+var renderPool = sync.Pool{
+	New: func() any {
+		return new(Render)
+	},
+}
 
 // Render struct
 type Render struct {
@@ -22,11 +29,13 @@ type Render struct {
 
 // NewRender creates a new NewRender instance.
 func NewRender(w http.ResponseWriter, r ...*http.Request) *Render {
-	if len(r) == 0 {
-		return &Render{w: w}
+	render := renderPool.Get().(*Render)
+	render.w = w
+	if len(r) > 0 {
+		render.r = r[0]
 	}
 
-	return &Render{w: w, r: r[0]}
+	return render
 }
 
 // ContentType sets the Content-Type header for an HTTP response.
@@ -316,4 +325,12 @@ func (r *Render) Flush() {
 func (r *Render) Hijack() (http.Hijacker, bool) {
 	h, ok := r.w.(http.Hijacker)
 	return h, ok
+}
+
+// Release puts the Render instance back into the pool.
+func (r *Render) Release() {
+	r.w = nil
+	r.r = nil
+	r.contentTypeSet = false
+	renderPool.Put(r)
 }

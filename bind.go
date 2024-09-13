@@ -4,11 +4,18 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/go-rat/chix/binder"
 )
+
+var bindPool = sync.Pool{
+	New: func() any {
+		return new(Bind)
+	},
+}
 
 // Bind struct
 type Bind struct {
@@ -17,7 +24,10 @@ type Bind struct {
 
 // NewBind creates a new Bind instance.
 func NewBind(r *http.Request) *Bind {
-	return &Bind{r: r}
+	b := bindPool.Get().(*Bind)
+	b.r = r
+
+	return b
 }
 
 // Header binds the request header strings into the struct, map[string]string and map[string][]string.
@@ -91,4 +101,10 @@ func (b *Bind) Body(out any) error {
 
 	// No suitable content type found
 	return errors.New(http.StatusText(http.StatusUnprocessableEntity))
+}
+
+// Release releases the Bind instance back into the pool.
+func (b *Bind) Release() {
+	b.r = nil
+	bindPool.Put(b)
 }
