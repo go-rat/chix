@@ -1,6 +1,7 @@
 package binder
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"sync"
@@ -125,21 +126,34 @@ func parseParamSquareBrackets(k string) (string, error) {
 	var sb strings.Builder
 
 	kbytes := []byte(k)
+	openBracketsCount := 0
 
 	for i, b := range kbytes {
-		if b == '[' && kbytes[i+1] != ']' {
-			if err := sb.WriteByte('.'); err != nil {
-				return "", err //nolint:wrapcheck // unnecessary to wrap it
+		if b == '[' {
+			openBracketsCount++
+			if i+1 < len(kbytes) && kbytes[i+1] != ']' {
+				if err := sb.WriteByte('.'); err != nil {
+					return "", err //nolint:wrapcheck // unnecessary to wrap it
+				}
 			}
+			continue
 		}
 
-		if b == '[' || b == ']' {
+		if b == ']' {
+			openBracketsCount--
+			if openBracketsCount < 0 {
+				return "", errors.New("unmatched brackets")
+			}
 			continue
 		}
 
 		if err := sb.WriteByte(b); err != nil {
 			return "", err //nolint:wrapcheck // unnecessary to wrap it
 		}
+	}
+
+	if openBracketsCount > 0 {
+		return "", errors.New("unmatched brackets")
 	}
 
 	return sb.String(), nil

@@ -15,8 +15,9 @@ import (
 
 // Render struct
 type Render struct {
-	w http.ResponseWriter
-	r *http.Request
+	w              http.ResponseWriter
+	r              *http.Request
+	contentTypeSet bool
 }
 
 // NewRender creates a new NewRender instance.
@@ -26,6 +27,12 @@ func NewRender(w http.ResponseWriter, r ...*http.Request) *Render {
 	}
 
 	return &Render{w: w, r: r[0]}
+}
+
+// ContentType sets the Content-Type header for an HTTP response.
+func (r *Render) ContentType(v string) {
+	r.contentTypeSet = true
+	r.w.Header().Set(HeaderContentType, v)
 }
 
 // Status is a warpper for WriteHeader method.
@@ -62,28 +69,46 @@ func (r *Render) Redirect(url string) {
 	http.Redirect(r.w, r.r, url, http.StatusFound)
 }
 
+// RedirectPermanent replies to the request with a redirect to url, which may be
+// a path relative to the request path.
+func (r *Render) RedirectPermanent(url string) {
+	if r.r == nil {
+		http.Error(r.w, "chix: RedirectPermanent requires passing *http.Request", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(r.w, r.r, url, http.StatusMovedPermanently)
+}
+
 // PlainText writes a string to the response, setting the Content-Type as
-// text/plain.
+// text/plain if not set.
 func (r *Render) PlainText(v string) {
-	r.w.Header().Set(HeaderContentType, MIMETextPlainCharsetUTF8)
+	if !r.contentTypeSet {
+		r.w.Header().Set(HeaderContentType, MIMETextPlainCharsetUTF8)
+	}
 	_, _ = r.w.Write([]byte(v))
 }
 
 // Data writes raw bytes to the response, setting the Content-Type as
-// application/octet-stream.
+// application/octet-stream if not set.
 func (r *Render) Data(v []byte) {
-	r.w.Header().Set(HeaderContentType, MIMEOctetStream)
+	if !r.contentTypeSet {
+		r.w.Header().Set(HeaderContentType, MIMEOctetStream)
+	}
 	_, _ = r.w.Write(v)
 }
 
-// HTML writes a string to the response, setting the Content-Type as text/html.
+// HTML writes a string to the response, setting the Content-Type as text/html
+// if not set.
 func (r *Render) HTML(v string) {
-	r.w.Header().Set(HeaderContentType, MIMETextHTMLCharsetUTF8)
+	if !r.contentTypeSet {
+		r.w.Header().Set(HeaderContentType, MIMETextHTMLCharsetUTF8)
+	}
 	_, _ = r.w.Write([]byte(v))
 }
 
 // JSON marshals 'v' to JSON, automatically escaping HTML and setting the
-// Content-Type as application/json.
+// Content-Type as application/json if not set.
 func (r *Render) JSON(v any) {
 	buf := new(bytes.Buffer)
 	enc := JSONEncoder(buf)
@@ -93,12 +118,14 @@ func (r *Render) JSON(v any) {
 		return
 	}
 
-	r.w.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
+	if !r.contentTypeSet {
+		r.w.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
+	}
 	_, _ = r.w.Write(buf.Bytes())
 }
 
 // JSONP marshals 'v' to JSON, automatically escaping HTML and setting the
-// Content-Type as application/javascript.
+// Content-Type as application/javascript if not set.
 func (r *Render) JSONP(callback string, v any) {
 	buf := new(bytes.Buffer)
 	enc := JSONEncoder(buf)
@@ -108,13 +135,15 @@ func (r *Render) JSONP(callback string, v any) {
 		return
 	}
 
-	r.w.Header().Set(HeaderContentType, MIMEApplicationJavaScriptCharsetUTF8)
+	if !r.contentTypeSet {
+		r.w.Header().Set(HeaderContentType, MIMEApplicationJavaScriptCharsetUTF8)
+	}
 	_, _ = r.w.Write([]byte(callback + "("))
 	_, _ = r.w.Write(buf.Bytes())
 	_, _ = r.w.Write([]byte(");"))
 }
 
-// XML marshals 'v' to XML, setting the Content-Type as application/xml. It
+// XML marshals 'v' to XML, setting the Content-Type as application/xml if not set. It
 // will automatically prepend a generic XML header (see encoding/xml.Header) if
 // one is not found in the first 100 bytes of 'v'.
 func (r *Render) XML(v any) {
@@ -125,7 +154,9 @@ func (r *Render) XML(v any) {
 		return
 	}
 
-	r.w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
+	if !r.contentTypeSet {
+		r.w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
+	}
 
 	// Try to find <?xml header in first 100 bytes (just in case there're some XML comments).
 	findHeaderUntil := buf.Len()
@@ -168,7 +199,7 @@ func (r *Render) Stream(step func(w io.Writer) bool) bool {
 }
 
 // EventStream writes a stream of JSON objects from a channel to the response and setting the
-// Content-Type as text/event-stream.
+// Content-Type as text/event-stream if not set.
 func (r *Render) EventStream(v any) {
 	if r.r == nil {
 		http.Error(r.w, "chix: EventStream requires passing *http.Request", http.StatusInternalServerError)
@@ -179,7 +210,9 @@ func (r *Render) EventStream(v any) {
 		return
 	}
 
-	r.w.Header().Set(HeaderContentType, MIMEEventStreamCharsetUTF8)
+	if !r.contentTypeSet {
+		r.w.Header().Set(HeaderContentType, MIMEEventStreamCharsetUTF8)
+	}
 	r.w.Header().Set(HeaderCacheControl, "no-cache")
 
 	if r.r.ProtoMajor == 1 {
@@ -224,14 +257,16 @@ func (r *Render) EventStream(v any) {
 }
 
 // SSEvent writes a Server-Sent Event to the response and setting the
-// Content-Type as text/event-stream.
+// Content-Type as text/event-stream if not set.
 func (r *Render) SSEvent(event renderer.SSEvent) {
 	if r.r == nil {
 		http.Error(r.w, "chix: SSEvent requires passing *http.Request", http.StatusInternalServerError)
 		return
 	}
 
-	r.w.Header().Set(HeaderContentType, MIMEEventStreamCharsetUTF8)
+	if !r.contentTypeSet {
+		r.w.Header().Set(HeaderContentType, MIMEEventStreamCharsetUTF8)
+	}
 	r.w.Header().Set(HeaderCacheControl, "no-cache")
 
 	if r.r.ProtoMajor == 1 {

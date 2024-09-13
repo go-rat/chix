@@ -2,7 +2,7 @@
 
 This package provides some methods that Chi lacks, such as binding and rendering, and it's a lightweight package that doesn't have any dependencies.
 
-A lot of the code in this package comes from [Fiber](https://github.com/gofiber/fiber), the last synchronized version: [260c5e5406874e6d9a48ec2ef2c862d64a530e0b](https://github.com/gofiber/fiber/commit/260c5e5406874e6d9a48ec2ef2c862d64a530e0b).
+A lot of the code in this package comes from [Fiber](https://github.com/gofiber/fiber), the last synchronized version: [62f66e596811b6e957edbd79fa1f19bc4c856ace](https://github.com/gofiber/fiber/commit/62f66e596811b6e957edbd79fa1f19bc4c856ace).
 
 ## Guides
 
