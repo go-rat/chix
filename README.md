@@ -97,6 +97,7 @@ router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 
 	// ...
 })
+
 // Run tests with the following curl command:
 
 // curl "http://localhost:3000/?name=john&pass=doe&products=shoe,hat"
