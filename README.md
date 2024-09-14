@@ -15,7 +15,6 @@ import (
     "encoding/json"
     "encoding/xml"
 
-    "github.com/go-chi/chi/v5"
     "github.com/go-rat/chix"
 )
 
@@ -46,21 +45,23 @@ Chix supports binding into the struct with [gorilla/schema](https://github.com/g
 ```go
 // Field names should start with an uppercase letter
 type Person struct {
-    Name string `json:"name" xml:"name" form:"name"`
-    Pass string `json:"pass" xml:"pass" form:"pass"`
+	Name string `json:"name" xml:"name" form:"name"`
+	Pass string `json:"pass" xml:"pass" form:"pass"`
 }
 
 router.Post("/", func(w http.ResponseWriter, r *http.Request) {
-    p := new(Person)
+	p := new(Person)
+	bind := chix.NewBind(r)
+	defer bind.Release()
 
-    if err := chix.NewBind(r).Body(p); err != nil {
-        return err
-    }
+	if err := bind.Body(p); err != nil {
+		return err
+	}
 
-    log.Println(p.Name) // john
-    log.Println(p.Pass) // doe
+	log.Println(p.Name) // john
+	log.Println(p.Pass) // doe
 
-    // ...
+	// ...
 })
 
 // Run tests with the following curl commands:
@@ -82,17 +83,19 @@ Chix supports binding into the `map[string]string` or `map[string][]string`. Her
 
 ```go
 router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-    p := make(map[string][]string)
+	p := make(map[string][]string)
+	bind := chix.NewBind(r)
+	defer bind.Release()
 
-    if err := chix.NewBind(r).Query(p); err != nil {
-        return err
-    }
+	if err := bind.Query(p); err != nil {
+		return err
+	}
 
-    log.Println(p["name"])     // john
-    log.Println(p["pass"])     // doe
-    log.Println(p["products"]) // [shoe, hat]
+	log.Println(p["name"])     // john
+	log.Println(p["pass"])     // doe
+	log.Println(p["products"]) // [shoe, hat]
 
-    // ...
+	// ...
 })
 // Run tests with the following curl command:
 
@@ -103,28 +106,37 @@ router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 
 #### Support Methods
 
+- ContentType
 - Status
 - Header
 - Cookie
 - WithoutCookie
 - Redirect
+- RedirectPermanent
 - PlainText
 - Data
 - HTML
 - JSON
+- JSONP
 - XML
 - NoContent
+- Stream
 - EventStream
+- SSEvent
 - File
 - Download
 - Flush
+- Hijack
+- Release
 
 #### Render a JSON
 
 ```go
 router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-	chix.NewRender(w).JSON(chix.M{
-        "hello": "world",
-    })
+	render := chix.NewRender(w)
+	defer render.Release()
+	render.JSON(chix.M{
+		"hello": "world",
+	})
 })
 ```
