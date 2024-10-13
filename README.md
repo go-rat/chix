@@ -2,7 +2,7 @@
 
 This package provides some methods that Chi lacks, such as binding and rendering, and it's a lightweight package that doesn't have any dependencies.
 
-A lot of the code in this package comes from [Fiber](https://github.com/gofiber/fiber), the last synchronized version: [62f66e596811b6e957edbd79fa1f19bc4c856ace](https://github.com/gofiber/fiber/commit/62f66e596811b6e957edbd79fa1f19bc4c856ace).
+A lot of the code in this package comes from [Fiber](https://github.com/gofiber/fiber), the last synchronized version: [3fc1b297481d516297ae155bc08e09c92a5b572e](https://github.com/gofiber/fiber/commit/3fc1b297481d516297ae155bc08e09c92a5b572e).
 
 ## Guides
 
@@ -40,7 +40,7 @@ func init() {
 
 #### Binding into the Struct
 
-Chix supports binding into the struct with [gorilla/schema](https://github.com/gorilla/schema). Here's an example:
+Chix supports binding into the struct with [gofiber/schema](https://github.com/gofiber/schema). Here's an example:
 
 ```go
 // Field names should start with an uppercase letter

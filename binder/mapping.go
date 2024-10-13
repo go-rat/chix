@@ -2,11 +2,12 @@ package binder
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"sync"
 
-	"github.com/go-rat/chix/schema"
+	"github.com/gofiber/schema"
 )
 
 // ParserConfig form decoder config for SetParserDecoder
@@ -87,7 +88,11 @@ func parseToStruct(aliasTag string, out any, data map[string][]string) error {
 	// Set alias tag
 	schemaDecoder.SetAliasTag(aliasTag)
 
-	return schemaDecoder.Decode(out, data)
+	if err := schemaDecoder.Decode(out, data); err != nil {
+		return fmt.Errorf("bind: %w", err)
+	}
+
+	return nil
 }
 
 // Parse data into the map
