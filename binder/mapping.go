@@ -3,6 +3,7 @@ package binder
 import (
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"reflect"
 	"strings"
 	"sync"
@@ -66,7 +67,7 @@ func init() {
 }
 
 // parse data into the map or struct
-func parse(aliasTag string, out any, data map[string][]string) error {
+func parse(aliasTag string, out any, data map[string][]string, files ...map[string][]*multipart.FileHeader) error {
 	ptrVal := reflect.ValueOf(out)
 	ptrVal = reflect.Indirect(ptrVal)
 
@@ -76,11 +77,11 @@ func parse(aliasTag string, out any, data map[string][]string) error {
 	}
 
 	// Parse into the struct
-	return parseToStruct(aliasTag, out, data)
+	return parseToStruct(aliasTag, out, data, files...)
 }
 
 // Parse data into the struct with gorilla/schema
-func parseToStruct(aliasTag string, out any, data map[string][]string) error {
+func parseToStruct(aliasTag string, out any, data map[string][]string, files ...map[string][]*multipart.FileHeader) error {
 	// Get decoder from pool
 	schemaDecoder := decoderPoolMap[aliasTag].Get().(*schema.Decoder) //nolint:errcheck,forcetypeassert // not needed
 	defer decoderPoolMap[aliasTag].Put(schemaDecoder)
@@ -88,7 +89,7 @@ func parseToStruct(aliasTag string, out any, data map[string][]string) error {
 	// Set alias tag
 	schemaDecoder.SetAliasTag(aliasTag)
 
-	if err := schemaDecoder.Decode(out, data); err != nil {
+	if err := schemaDecoder.Decode(out, data, files...); err != nil {
 		return fmt.Errorf("bind: %w", err)
 	}
 
@@ -100,8 +101,8 @@ func parseToStruct(aliasTag string, out any, data map[string][]string) error {
 func parseToMap(ptr any, data map[string][]string) error {
 	elem := reflect.TypeOf(ptr).Elem()
 
-	// map[string][]string
-	if elem.Kind() == reflect.Slice {
+	switch elem.Kind() {
+	case reflect.Slice:
 		newMap, ok := ptr.(map[string][]string)
 		if !ok {
 			return ErrMapNotConvertable
@@ -110,18 +111,22 @@ func parseToMap(ptr any, data map[string][]string) error {
 		for k, v := range data {
 			newMap[k] = v
 		}
+	case reflect.String, reflect.Interface:
+		newMap, ok := ptr.(map[string]string)
+		if !ok {
+			return ErrMapNotConvertable
+		}
 
-		return nil
-	}
+		for k, v := range data {
+			if len(v) == 0 {
+				newMap[k] = ""
+				continue
+			}
 
-	// map[string]string
-	newMap, ok := ptr.(map[string]string)
-	if !ok {
-		return ErrMapNotConvertable
-	}
-
-	for k, v := range data {
-		newMap[k] = v[len(v)-1]
+			newMap[k] = v[len(v)-1]
+		}
+	default:
+		return nil // it's not necessary to check all types
 	}
 
 	return nil
@@ -237,4 +242,56 @@ func FilterFlags(content string) string {
 		}
 	}
 	return content
+}
+
+func formatBindData[T, K any](out any, data map[string][]T, key string, value K, enableSplitting, supportBracketNotation bool) error { //nolint:revive // it's okay
+	var err error
+	if supportBracketNotation && strings.Contains(key, "[") {
+		key, err = parseParamSquareBrackets(key)
+		if err != nil {
+			return err
+		}
+	}
+
+	switch v := any(value).(type) {
+	case string:
+		dataMap, ok := any(data).(map[string][]string)
+		if !ok {
+			return fmt.Errorf("unsupported value type: %T", value)
+		}
+
+		assignBindData(out, dataMap, key, v, enableSplitting)
+	case []string:
+		dataMap, ok := any(data).(map[string][]string)
+		if !ok {
+			return fmt.Errorf("unsupported value type: %T", value)
+		}
+
+		for _, val := range v {
+			assignBindData(out, dataMap, key, val, enableSplitting)
+		}
+	case []*multipart.FileHeader:
+		for _, val := range v {
+			valT, ok := any(val).(T)
+			if !ok {
+				return fmt.Errorf("unsupported value type: %T", value)
+			}
+			data[key] = append(data[key], valT)
+		}
+	default:
+		return fmt.Errorf("unsupported value type: %T", value)
+	}
+
+	return err
+}
+
+func assignBindData(out any, data map[string][]string, key, value string, enableSplitting bool) { //nolint:revive // it's okay
+	if enableSplitting && strings.Contains(value, ",") && equalFieldType(out, reflect.Slice, key) {
+		values := strings.Split(value, ",")
+		for i := 0; i < len(values); i++ {
+			data[key] = append(data[key], values[i])
+		}
+	} else {
+		data[key] = append(data[key], value)
+	}
 }

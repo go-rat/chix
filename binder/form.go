@@ -1,12 +1,14 @@
 package binder
 
 import (
+	"mime/multipart"
 	"net/http"
-	"reflect"
 	"strings"
 )
 
-type formBinding struct{}
+type formBinding struct {
+	EnableSplitting bool
+}
 
 func (*formBinding) Name() string {
 	return "form"
@@ -14,35 +16,15 @@ func (*formBinding) Name() string {
 
 func (b *formBinding) Bind(r *http.Request, out any) error {
 	data := make(map[string][]string)
-	var err error
 
-	if err = r.ParseForm(); err != nil {
+	if err := r.ParseForm(); err != nil {
 		return err
 	}
 
 	for k, v := range r.PostForm {
-		if err != nil {
+		if err := formatBindData(out, data, k, strings.Join(v, ","), b.EnableSplitting, true); err != nil {
 			return err
 		}
-
-		v := strings.Join(v, ",")
-
-		if strings.Contains(k, "[") {
-			k, err = parseParamSquareBrackets(k)
-		}
-
-		if strings.Contains(v, ",") && equalFieldType(out, reflect.Slice, k) {
-			values := strings.Split(v, ",")
-			for i := 0; i < len(values); i++ {
-				data[k] = append(data[k], values[i])
-			}
-		} else {
-			data[k] = append(data[k], v)
-		}
-	}
-
-	if err != nil {
-		return err
 	}
 
 	return parse(b.Name(), out, data)
@@ -53,5 +35,19 @@ func (b *formBinding) BindMultipart(r *http.Request, out any, size int64) error 
 		return err
 	}
 
-	return parse(b.Name(), out, r.MultipartForm.Value)
+	data := make(map[string][]string)
+	for key, values := range r.MultipartForm.Value {
+		if err := formatBindData(out, data, key, values, b.EnableSplitting, true); err != nil {
+			return err
+		}
+	}
+
+	files := make(map[string][]*multipart.FileHeader)
+	for key, values := range r.MultipartForm.File {
+		if err := formatBindData(out, files, key, values, b.EnableSplitting, true); err != nil {
+			return err
+		}
+	}
+
+	return parse(b.Name(), out, data, files)
 }

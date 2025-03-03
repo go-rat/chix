@@ -2,11 +2,12 @@ package binder
 
 import (
 	"net/http"
-	"reflect"
 	"strings"
 )
 
-type queryBinding struct{}
+type queryBinding struct {
+	EnableSplitting bool
+}
 
 func (*queryBinding) Name() string {
 	return "query"
@@ -14,26 +15,10 @@ func (*queryBinding) Name() string {
 
 func (b *queryBinding) Bind(r *http.Request, out any) error {
 	data := make(map[string][]string)
-	var err error
 
 	for k, v := range r.URL.Query() {
-		if err != nil {
+		if err := formatBindData(out, data, k, strings.Join(v, ","), b.EnableSplitting, true); err != nil {
 			return err
-		}
-
-		v := strings.Join(v, ",")
-
-		if strings.Contains(k, "[") {
-			k, err = parseParamSquareBrackets(k)
-		}
-
-		if strings.Contains(v, ",") && equalFieldType(out, reflect.Slice, k) {
-			values := strings.Split(v, ",")
-			for i := 0; i < len(values); i++ {
-				data[k] = append(data[k], values[i])
-			}
-		} else {
-			data[k] = append(data[k], v)
 		}
 	}
 

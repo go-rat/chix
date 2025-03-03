@@ -1,0 +1,52 @@
+name: Test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+      - name: Set up environment
+        run: |
+          cp config/config.example.yml config/config.yml
+      - name: Run tests
+        run: go test -v -coverprofile="coverage.out" ./...
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+      - name: Set up environment
+        run: |
+          cp config/config.example.yml config/config.yml
+      - name: Run tests
+        run: go test -v -coverprofile="coverage.out" ./...
+  macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+      - name: Set up environment
+        run: |
+          cp config/config.example.yml config/config.yml
+      - name: Run tests
+        run: go test -v -coverprofile="coverage.out" ./...

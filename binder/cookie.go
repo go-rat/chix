@@ -2,11 +2,11 @@ package binder
 
 import (
 	"net/http"
-	"reflect"
-	"strings"
 )
 
-type cookieBinding struct{}
+type cookieBinding struct {
+	EnableSplitting bool
+}
 
 func (*cookieBinding) Name() string {
 	return "cookie"
@@ -19,13 +19,8 @@ func (b *cookieBinding) Bind(r *http.Request, out any) error {
 		k := cookie.Name
 		v := cookie.Value
 
-		if strings.Contains(v, ",") && equalFieldType(out, reflect.Slice, k) {
-			values := strings.Split(v, ",")
-			for i := 0; i < len(values); i++ {
-				data[k] = append(data[k], values[i])
-			}
-		} else {
-			data[k] = append(data[k], v)
+		if err := formatBindData(out, data, k, v, b.EnableSplitting, true); err != nil {
+			return err
 		}
 	}
 

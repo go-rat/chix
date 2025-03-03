@@ -19,13 +19,17 @@ var bindPool = sync.Pool{
 
 // Bind struct
 type Bind struct {
-	r *http.Request
+	r               *http.Request
+	enableSplitting bool
 }
 
 // NewBind creates a new Bind instance.
-func NewBind(r *http.Request) *Bind {
+func NewBind(r *http.Request, enableSplitting ...bool) *Bind {
 	b := bindPool.Get().(*Bind)
 	b.r = r
+	if len(enableSplitting) > 0 {
+		b.enableSplitting = enableSplitting[0]
+	}
 
 	return b
 }
@@ -106,5 +110,6 @@ func (b *Bind) Body(out any) error {
 // Release releases the Bind instance back into the pool.
 func (b *Bind) Release() {
 	b.r = nil
+	b.enableSplitting = false
 	bindPool.Put(b)
 }

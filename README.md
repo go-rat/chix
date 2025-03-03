@@ -1,6 +1,6 @@
 # Chix
 
-This package provides some methods that Chi lacks, such as binding and rendering, and it's a lightweight package that doesn't have any dependencies.
+This package provides some methods that Chi lacks, such as binding and rendering.
 
 A lot of the code in this package comes from [Fiber](https://github.com/gofiber/fiber), the last synchronized version: [3fc1b297481d516297ae155bc08e09c92a5b572e](https://github.com/gofiber/fiber/commit/3fc1b297481d516297ae155bc08e09c92a5b572e).
 
