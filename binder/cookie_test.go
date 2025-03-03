@@ -11,9 +11,7 @@ import (
 func Test_CookieBinder_Bind(t *testing.T) {
 	t.Parallel()
 
-	b := &cookieBinding{
-		EnableSplitting: true,
-	}
+	b := &cookieBinding{}
 	require.Equal(t, "cookie", b.Name())
 
 	type Post struct {
@@ -33,7 +31,7 @@ func Test_CookieBinder_Bind(t *testing.T) {
 	req.AddCookie(&http.Cookie{Name: "names", Value: "john,doe"})
 	req.AddCookie(&http.Cookie{Name: "age", Value: "42"})
 
-	err := b.Bind(req, &user)
+	err := b.Bind(req, &user, true)
 
 	require.NoError(t, err)
 	require.Equal(t, "john", user.Name)
@@ -46,9 +44,7 @@ func Benchmark_CookieBinder_Bind(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	binder := &cookieBinding{
-		EnableSplitting: true,
-	}
+	binder := &cookieBinding{}
 
 	type User struct {
 		Name  string   `query:"name"`
@@ -66,7 +62,7 @@ func Benchmark_CookieBinder_Bind(b *testing.B) {
 
 	var err error
 	for i := 0; i < b.N; i++ {
-		err = binder.Bind(req, &user)
+		err = binder.Bind(req, &user, true)
 	}
 
 	require.NoError(b, err)

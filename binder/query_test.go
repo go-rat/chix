@@ -11,9 +11,7 @@ import (
 func Test_QueryBinder_Bind(t *testing.T) {
 	t.Parallel()
 
-	b := &queryBinding{
-		EnableSplitting: true,
-	}
+	b := &queryBinding{}
 	require.Equal(t, "query", b.Name())
 
 	type Post struct {
@@ -31,7 +29,7 @@ func Test_QueryBinder_Bind(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.URL.RawQuery = "name=john&names=john,doe&age=42&posts[0][title]=post1&posts[1][title]=post2&posts[2][title]=post3"
 
-	err := b.Bind(req, &user)
+	err := b.Bind(req, &user, true)
 
 	require.NoError(t, err)
 	require.Equal(t, "john", user.Name)
@@ -48,9 +46,7 @@ func Benchmark_QueryBinder_Bind(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	binder := &queryBinding{
-		EnableSplitting: true,
-	}
+	binder := &queryBinding{}
 
 	type User struct {
 		Name  string   `query:"name"`
@@ -64,7 +60,7 @@ func Benchmark_QueryBinder_Bind(b *testing.B) {
 
 	var err error
 	for i := 0; i < b.N; i++ {
-		err = binder.Bind(req, &user)
+		err = binder.Bind(req, &user, true)
 	}
 
 	require.NoError(b, err)

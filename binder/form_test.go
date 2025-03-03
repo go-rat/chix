@@ -15,9 +15,7 @@ import (
 func Test_FormBinder_Bind(t *testing.T) {
 	t.Parallel()
 
-	b := &formBinding{
-		EnableSplitting: true,
-	}
+	b := &formBinding{}
 	require.Equal(t, "form", b.Name())
 
 	type Post struct {
@@ -35,7 +33,7 @@ func Test_FormBinder_Bind(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("name=john&names=john,doe&age=42&posts[0][title]=post1&posts[1][title]=post2&posts[2][title]=post3"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	err := b.Bind(req, &user)
+	err := b.Bind(req, &user, true)
 
 	require.NoError(t, err)
 	require.Equal(t, "john", user.Name)
@@ -52,9 +50,7 @@ func Benchmark_FormBinder_Bind(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	binder := &formBinding{
-		EnableSplitting: true,
-	}
+	binder := &formBinding{}
 
 	type User struct {
 		Name  string   `query:"name"`
@@ -70,7 +66,7 @@ func Benchmark_FormBinder_Bind(b *testing.B) {
 
 	var err error
 	for i := 0; i < b.N; i++ {
-		err = binder.Bind(req, &user)
+		err = binder.Bind(req, &user, true)
 	}
 
 	require.NoError(b, err)
@@ -82,9 +78,7 @@ func Benchmark_FormBinder_Bind(b *testing.B) {
 func Test_FormBinder_BindMultipart(t *testing.T) {
 	t.Parallel()
 
-	b := &formBinding{
-		EnableSplitting: true,
-	}
+	b := &formBinding{}
 	require.Equal(t, "form", b.Name())
 
 	type Post struct {
@@ -135,7 +129,7 @@ func Test_FormBinder_BindMultipart(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/", buf)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
 
-	err = b.BindMultipart(req, &user, 32768<<10)
+	err = b.BindMultipart(req, &user, 32768<<10, true)
 
 	require.NoError(t, err)
 	require.Equal(t, "john", user.Name)
@@ -185,9 +179,7 @@ func Benchmark_FormBinder_BindMultipart(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	binder := &formBinding{
-		EnableSplitting: true,
-	}
+	binder := &formBinding{}
 
 	type User struct {
 		Name  string   `form:"name"`
@@ -213,7 +205,7 @@ func Benchmark_FormBinder_BindMultipart(b *testing.B) {
 
 	var err error
 	for i := 0; i < b.N; i++ {
-		err = binder.BindMultipart(req, &user, 32768<<10)
+		err = binder.BindMultipart(req, &user, 32768<<10, true)
 	}
 
 	require.NoError(b, err)

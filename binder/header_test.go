@@ -11,9 +11,7 @@ import (
 func Test_HeaderBinder_Bind(t *testing.T) {
 	t.Parallel()
 
-	b := &headerBinding{
-		EnableSplitting: true,
-	}
+	b := &headerBinding{}
 	require.Equal(t, "header", b.Name())
 
 	type User struct {
@@ -30,7 +28,7 @@ func Test_HeaderBinder_Bind(t *testing.T) {
 	req.Header.Set("age", "42")
 	req.Header.Set("posts", "post1,post2,post3")
 
-	err := b.Bind(req, &user)
+	err := b.Bind(req, &user, true)
 
 	require.NoError(t, err)
 	require.Equal(t, "john", user.Name)
@@ -47,9 +45,7 @@ func Benchmark_HeaderBinder_Bind(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	binder := &headerBinding{
-		EnableSplitting: true,
-	}
+	binder := &headerBinding{}
 
 	type User struct {
 		Name  string   `header:"Name"`
@@ -65,7 +61,7 @@ func Benchmark_HeaderBinder_Bind(b *testing.B) {
 
 	var err error
 	for i := 0; i < b.N; i++ {
-		err = binder.Bind(req, &user)
+		err = binder.Bind(req, &user, true)
 	}
 
 	require.NoError(b, err)

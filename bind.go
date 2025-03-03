@@ -36,18 +36,18 @@ func NewBind(r *http.Request, enableSplitting ...bool) *Bind {
 
 // Header binds the request header strings into the struct, map[string]string and map[string][]string.
 func (b *Bind) Header(out any) error {
-	return binder.HeaderBinder.Bind(b.r, out)
+	return binder.HeaderBinder.Bind(b.r, out, b.enableSplitting)
 }
 
 // Cookie binds the request cookie strings into the struct, map[string]string and map[string][]string.
 // NOTE: If your cookie is like key=val1,val2; they'll be binded as an slice if your map is map[string][]string. Else, it'll use last element of cookie.
 func (b *Bind) Cookie(out any) error {
-	return binder.CookieBinder.Bind(b.r, out)
+	return binder.CookieBinder.Bind(b.r, out, b.enableSplitting)
 }
 
 // Query binds the query string into the struct, map[string]string and map[string][]string.
 func (b *Bind) Query(out any) error {
-	return binder.QueryBinder.Bind(b.r, out)
+	return binder.QueryBinder.Bind(b.r, out, b.enableSplitting)
 }
 
 // JSON binds the body string into the struct.
@@ -62,7 +62,7 @@ func (b *Bind) XML(out any) error {
 
 // Form binds the form into the struct, map[string]string and map[string][]string.
 func (b *Bind) Form(out any) error {
-	return binder.FormBinder.Bind(b.r, out)
+	return binder.FormBinder.Bind(b.r, out, b.enableSplitting)
 }
 
 // URI binds the route parameters into the struct, map[string]string and map[string][]string.
@@ -78,7 +78,7 @@ func (b *Bind) MultipartForm(out any, size ...int64) error {
 		size = append(size, 32768<<10) // 32MB
 	}
 
-	return binder.FormBinder.BindMultipart(b.r, out, size[0])
+	return binder.FormBinder.BindMultipart(b.r, out, size[0], b.enableSplitting)
 }
 
 // Body binds the request body into the struct, map[string]string and map[string][]string.

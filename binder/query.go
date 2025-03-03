@@ -5,19 +5,20 @@ import (
 	"strings"
 )
 
-type queryBinding struct {
-	EnableSplitting bool
-}
+type queryBinding struct{}
 
 func (*queryBinding) Name() string {
 	return "query"
 }
 
-func (b *queryBinding) Bind(r *http.Request, out any) error {
+func (b *queryBinding) Bind(r *http.Request, out any, enableSplitting ...bool) error {
 	data := make(map[string][]string)
+	if len(enableSplitting) == 0 {
+		enableSplitting = append(enableSplitting, false)
+	}
 
 	for k, v := range r.URL.Query() {
-		if err := formatBindData(out, data, k, strings.Join(v, ","), b.EnableSplitting, true); err != nil {
+		if err := formatBindData(out, data, k, strings.Join(v, ","), enableSplitting[0], true); err != nil {
 			return err
 		}
 	}
