@@ -38,12 +38,12 @@ func init() {
 - [JSON](binder/json.go)
 - [XML](binder/xml.go)
 
-#### Binding into the Struct
+#### Binding into a Struct
 
-Chix supports binding into the struct with [gofiber/schema](https://github.com/gofiber/schema). Here's an example:
+Chix supports binding request data directly into a struct using [gorilla/schema](https://github.com/gorilla/schema). Here's an example:
 
 ```go
-// Field names should start with an uppercase letter
+// Field names must start with an uppercase letter
 type Person struct {
 	Name string `json:"name" xml:"name" form:"name"`
 	Pass string `json:"pass" xml:"pass" form:"pass"`
@@ -58,49 +58,54 @@ router.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		return err
 	}
 
-	log.Println(p.Name) // john
-	log.Println(p.Pass) // doe
+	log.Println(p.Name) // Output: john
+	log.Println(p.Pass) // Output: doe
 
-	// ...
+	// Additional logic...
 })
 
 // Run tests with the following curl commands:
 
-// curl -X POST -H "Content-Type: application/json" --data "{\"name\":\"john\",\"pass\":\"doe\"}" localhost:3000
+// JSON
+curl -X POST -H "Content-Type: application/json" --data "{\"name\":\"john\",\"pass\":\"doe\"}" localhost:3000
 
-// curl -X POST -H "Content-Type: application/xml" --data "<login><name>john</name><pass>doe</pass></login>" localhost:3000
+// XML
+curl -X POST -H "Content-Type: application/xml" --data "<login><name>john</name><pass>doe</pass></login>" localhost:3000
 
-// curl -X POST -H "Content-Type: application/x-www-form-urlencoded" --data "name=john&pass=doe" localhost:3000
+// URL-Encoded Form
+curl -X POST -H "Content-Type: application/x-www-form-urlencoded" --data "name=john&pass=doe" localhost:3000
 
-// curl -X POST -F name=john -F pass=doe http://localhost:3000
+// Multipart Form
+curl -X POST -F name=john -F pass=doe http://localhost:3000
 
-// curl -X POST "http://localhost:3000/?name=john&pass=doe"
+// Query Parameters
+curl -X POST "http://localhost:3000/?name=john&pass=doe"
 ```
 
-#### Binding into the Map
+#### Binding into q Map
 
-Chix supports binding into the `map[string]string` or `map[string][]string`. Here's an example:
+Chix allows binding request data into a `map[string]string` or `map[string][]string`. Here's an example:
 
 ```go
 router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-	p := make(map[string][]string)
+	params := make(map[string][]string)
 	bind := chix.NewBind(r)
 	defer bind.Release()
 
-	if err := bind.Query(p); err != nil {
+	if err := bind.Query(params); err != nil {
 		return err
 	}
 
-	log.Println(p["name"])     // john
-	log.Println(p["pass"])     // doe
-	log.Println(p["products"]) // [shoe, hat]
+	log.Println(params["name"])     // Output: [john]
+	log.Println(params["pass"])     // Output: [doe]
+	log.Println(params["products"]) // Output: [shoe hat]
 
-	// ...
+	// Additional logic...
 })
 
 // Run tests with the following curl command:
 
-// curl "http://localhost:3000/?name=john&pass=doe&products=shoe,hat"
+curl "http://localhost:3000/?name=john&pass=doe&products=shoe&products=hat"
 ```
 
 ### Render
