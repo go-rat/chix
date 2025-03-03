@@ -40,7 +40,7 @@ func init() {
 
 #### Binding into a Struct
 
-Chix supports binding request data directly into a struct using [gorilla/schema](https://github.com/gorilla/schema). Here's an example:
+Chix supports binding request data directly into a struct using [gofiber/schema](https://github.com/gofiber/schema). Here's an example:
 
 ```go
 // Field names must start with an uppercase letter
