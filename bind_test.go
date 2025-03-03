@@ -93,8 +93,8 @@ func TestBind_URIBindsCorrectly(t *testing.T) {
 func TestBind_MultipartFormBindsCorrectly(t *testing.T) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	writer.WriteField("key", "value")
-	writer.Close()
+	require.NoError(t, writer.WriteField("key", "value"))
+	require.NoError(t, writer.Close())
 	req := httptest.NewRequest("POST", "/", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	b := chix.NewBind(req)

@@ -15,9 +15,6 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
-      - name: Set up environment
-        run: |
-          cp config/config.example.yml config/config.yml
       - name: Run tests
         run: go test -v -coverprofile="coverage.out" ./...
   windows:
@@ -30,9 +27,6 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
-      - name: Set up environment
-        run: |
-          cp config/config.example.yml config/config.yml
       - name: Run tests
         run: go test -v -coverprofile="coverage.out" ./...
   macos:
@@ -45,8 +39,5 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
-      - name: Set up environment
-        run: |
-          cp config/config.example.yml config/config.yml
       - name: Run tests
         run: go test -v -coverprofile="coverage.out" ./...
