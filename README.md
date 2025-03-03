@@ -82,7 +82,7 @@ curl -X POST -F name=john -F pass=doe http://localhost:3000
 curl -X POST "http://localhost:3000/?name=john&pass=doe"
 ```
 
-#### Binding into q Map
+#### Binding into a Map
 
 Chix allows binding request data into a `map[string]string` or `map[string][]string`. Here's an example:
 
