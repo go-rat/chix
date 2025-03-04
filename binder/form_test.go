@@ -53,9 +53,9 @@ func Benchmark_FormBinder_Bind(b *testing.B) {
 	binder := &formBinding{}
 
 	type User struct {
-		Name  string   `query:"name"`
-		Posts []string `query:"posts"`
-		Age   int      `query:"age"`
+		Name  string   `form:"name"`
+		Posts []string `form:"posts"`
+		Age   int      `form:"age"`
 	}
 	var user User
 
