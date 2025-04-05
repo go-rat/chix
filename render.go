@@ -253,12 +253,12 @@ func (r *Render) EventStream(v any) {
 
 			v := recv.Interface()
 			if err := enc.Encode(v); err != nil {
-				_, _ = r.w.Write([]byte(fmt.Sprintf("event: error\ndata: {\"error\":\"%v\"}\n\n", err)))
+				_, _ = fmt.Fprintf(r.w, "event: error\ndata: {\"error\":\"%v\"}\n\n", err)
 				r.Flush()
 				continue
 			}
 
-			_, _ = r.w.Write([]byte(fmt.Sprintf("event: data\ndata: %s\n\n", buf.String())))
+			_, _ = fmt.Fprintf(r.w, "event: data\ndata: %s\n\n", buf.String())
 			r.Flush()
 			buf.Reset()
 		}

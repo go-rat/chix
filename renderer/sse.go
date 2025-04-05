@@ -20,13 +20,22 @@ type SSEvent struct {
 func SSEventEncode(writer io.Writer, event SSEvent) error {
 	buf := new(bytes.Buffer)
 	if len(event.Event) > 0 {
-		buf.WriteString(fmt.Sprintf("event: %s\n", event.Event))
+		_, err := fmt.Fprintf(writer, "event: %s\n", event.Event)
+		if err != nil {
+			return err
+		}
 	}
 	if len(event.ID) > 0 {
-		buf.WriteString(fmt.Sprintf("id: %s\n", event.ID))
+		_, err := fmt.Fprintf(writer, "id: %s\n", event.ID)
+		if err != nil {
+			return err
+		}
 	}
 	if event.Retry > 0 {
-		buf.WriteString(fmt.Sprintf("retry: %d\n", event.Retry))
+		_, err := fmt.Fprintf(writer, "retry: %d\n", event.Retry)
+		if err != nil {
+			return err
+		}
 	}
 
 	buf.WriteString("data: ")

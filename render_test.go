@@ -116,7 +116,9 @@ func TestRender_File(t *testing.T) {
 	req := httptest.NewRequest("GET", "/", nil)
 	f, err := os.CreateTemp("", "test.txt")
 	require.NoError(t, err)
-	defer os.Remove(f.Name())
+	defer func(name string) {
+		require.NoError(t, os.Remove(name))
+	}(f.Name())
 	_, err = f.WriteString("test file content")
 	require.NoError(t, err)
 	r := chix.NewRender(w, req)
@@ -129,7 +131,9 @@ func TestRender_Download(t *testing.T) {
 	req := httptest.NewRequest("GET", "/", nil)
 	f, err := os.CreateTemp("", "test.txt")
 	require.NoError(t, err)
-	defer os.Remove(f.Name())
+	defer func(name string) {
+		require.NoError(t, os.Remove(name))
+	}(f.Name())
 	_, err = f.WriteString("test file content")
 	require.NoError(t, err)
 	r := chix.NewRender(w, req)
@@ -182,7 +186,7 @@ func TestRender_Stream(t *testing.T) {
 		if count >= 3 {
 			return false
 		}
-		_, _ = w.Write([]byte(fmt.Sprintf("chunk %d\n", count)))
+		_, _ = fmt.Fprintf(w, "chunk %d\n", count)
 		count++
 		return true
 	})
