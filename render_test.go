@@ -117,7 +117,7 @@ func TestRender_File(t *testing.T) {
 	f, err := os.CreateTemp("", "test.txt")
 	require.NoError(t, err)
 	defer func(name string) {
-		require.NoError(t, os.Remove(name))
+		_ = os.Remove(name)
 	}(f.Name())
 	_, err = f.WriteString("test file content")
 	require.NoError(t, err)
@@ -132,7 +132,7 @@ func TestRender_Download(t *testing.T) {
 	f, err := os.CreateTemp("", "test.txt")
 	require.NoError(t, err)
 	defer func(name string) {
-		require.NoError(t, os.Remove(name))
+		_ = os.Remove(name)
 	}(f.Name())
 	_, err = f.WriteString("test file content")
 	require.NoError(t, err)
