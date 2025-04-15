@@ -25,11 +25,13 @@ type Render struct {
 	w              http.ResponseWriter
 	r              *http.Request
 	contentTypeSet bool
+	statusCode     int
 }
 
 // NewRender creates a new NewRender instance.
 func NewRender(w http.ResponseWriter, r ...*http.Request) *Render {
 	render := renderPool.Get().(*Render)
+	render.statusCode = http.StatusOK
 	render.w = w
 	if len(r) > 0 {
 		render.r = r[0]
@@ -46,7 +48,7 @@ func (r *Render) ContentType(v string) {
 
 // Status is a warpper for WriteHeader method.
 func (r *Render) Status(status int) {
-	r.w.WriteHeader(status)
+	r.statusCode = status
 }
 
 // Header sets the provided header key/value pair in the response.
@@ -95,6 +97,7 @@ func (r *Render) PlainText(v string) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMETextPlainCharsetUTF8)
 	}
+	r.w.WriteHeader(r.statusCode)
 	_, _ = r.w.Write([]byte(v))
 }
 
@@ -104,6 +107,7 @@ func (r *Render) Data(v []byte) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMEOctetStream)
 	}
+	r.w.WriteHeader(r.statusCode)
 	_, _ = r.w.Write(v)
 }
 
@@ -113,6 +117,7 @@ func (r *Render) HTML(v string) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMETextHTMLCharsetUTF8)
 	}
+	r.w.WriteHeader(r.statusCode)
 	_, _ = r.w.Write([]byte(v))
 }
 
@@ -130,6 +135,7 @@ func (r *Render) JSON(v any) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 	}
+	r.w.WriteHeader(r.statusCode)
 	_, _ = r.w.Write(buf.Bytes())
 }
 
@@ -147,6 +153,7 @@ func (r *Render) JSONP(callback string, v any) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMEApplicationJavaScriptCharsetUTF8)
 	}
+	r.w.WriteHeader(r.statusCode)
 	_, _ = r.w.Write([]byte(callback + "("))
 	_, _ = r.w.Write(buf.Bytes())
 	_, _ = r.w.Write([]byte(");"))
@@ -166,6 +173,7 @@ func (r *Render) XML(v any) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
 	}
+	r.w.WriteHeader(r.statusCode)
 
 	// Try to find <?xml header in first 100 bytes (just in case there're some XML comments).
 	findHeaderUntil := buf.Len()
@@ -192,6 +200,8 @@ func (r *Render) Stream(step func(w io.Writer) bool) bool {
 		http.Error(r.w, "chix: Stream requires passing *http.Request", http.StatusInternalServerError)
 		return false
 	}
+
+	r.w.WriteHeader(r.statusCode)
 
 	for {
 		select {
@@ -230,7 +240,7 @@ func (r *Render) EventStream(v any) {
 		r.w.Header().Set(HeaderConnection, "keep-alive")
 	}
 
-	r.w.WriteHeader(http.StatusOK)
+	r.w.WriteHeader(r.statusCode)
 
 	ctx := r.r.Context()
 	buf := new(strings.Builder)
@@ -284,7 +294,7 @@ func (r *Render) SSEvent(event renderer.SSEvent) {
 		r.w.Header().Set(HeaderConnection, "keep-alive")
 	}
 
-	r.w.WriteHeader(http.StatusOK)
+	r.w.WriteHeader(r.statusCode)
 	_ = renderer.SSEventEncode(r.w, event)
 }
 
@@ -332,5 +342,6 @@ func (r *Render) Release() {
 	r.w = nil
 	r.r = nil
 	r.contentTypeSet = false
+	r.statusCode = http.StatusOK
 	renderPool.Put(r)
 }
