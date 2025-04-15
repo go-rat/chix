@@ -46,9 +46,16 @@ func (r *Render) ContentType(v string) {
 	r.w.Header().Set(HeaderContentType, v)
 }
 
-// Status is a warpper for WriteHeader method.
+// Status sets the HTTP status code for the response, but does not send it yet.
+// This is because once the status is sent, no header can be modified.
 func (r *Render) Status(status int) {
 	r.statusCode = status
+}
+
+// SendStatus is a warpper for WriteHeader method, will send the status code immediately.
+func (r *Render) SendStatus(status int) {
+	r.statusCode = status
+	r.w.WriteHeader(status)
 }
 
 // Header sets the provided header key/value pair in the response.
@@ -190,7 +197,7 @@ func (r *Render) XML(v any) {
 
 // NoContent returns a HTTP 204 "No Content" response.
 func (r *Render) NoContent() {
-	r.Status(http.StatusNoContent)
+	r.w.WriteHeader(http.StatusNoContent)
 }
 
 // Stream sends a streaming response and returns a boolean
@@ -326,6 +333,7 @@ func (r *Render) Download(filepath, filename string) {
 
 // Flush sends any buffered data to the response.
 func (r *Render) Flush() {
+	r.w.WriteHeader(r.statusCode)
 	if f, ok := r.w.(http.Flusher); ok {
 		f.Flush()
 	}

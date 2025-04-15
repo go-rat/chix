@@ -29,6 +29,17 @@ func TestRender_Status(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := chix.NewRender(w)
 	r.Status(http.StatusNotFound)
+	r.PlainText("404 page not found")
+	r.Flush()
+	require.Equal(t, http.StatusNotFound, w.Code)
+	require.Equal(t, "404 page not found", w.Body.String())
+}
+
+func TestRender_SendStatus(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := chix.NewRender(w)
+	r.SendStatus(http.StatusNotFound)
+	r.Flush()
 	require.Equal(t, http.StatusNotFound, w.Code)
 }
 
