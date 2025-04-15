@@ -24,8 +24,9 @@ var renderPool = sync.Pool{
 type Render struct {
 	w              http.ResponseWriter
 	r              *http.Request
-	contentTypeSet bool
 	statusCode     int
+	statusCodeSent bool
+	contentTypeSet bool
 }
 
 // NewRender creates a new NewRender instance.
@@ -56,6 +57,7 @@ func (r *Render) Status(status int) {
 func (r *Render) SendStatus(status int) {
 	r.statusCode = status
 	r.w.WriteHeader(status)
+	r.statusCodeSent = true
 }
 
 // Header sets the provided header key/value pair in the response.
@@ -104,7 +106,9 @@ func (r *Render) PlainText(v string) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMETextPlainCharsetUTF8)
 	}
-	r.w.WriteHeader(r.statusCode)
+	if !r.statusCodeSent {
+		r.w.WriteHeader(r.statusCode)
+	}
 	_, _ = r.w.Write([]byte(v))
 }
 
@@ -114,7 +118,9 @@ func (r *Render) Data(v []byte) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMEOctetStream)
 	}
-	r.w.WriteHeader(r.statusCode)
+	if !r.statusCodeSent {
+		r.w.WriteHeader(r.statusCode)
+	}
 	_, _ = r.w.Write(v)
 }
 
@@ -124,7 +130,9 @@ func (r *Render) HTML(v string) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMETextHTMLCharsetUTF8)
 	}
-	r.w.WriteHeader(r.statusCode)
+	if !r.statusCodeSent {
+		r.w.WriteHeader(r.statusCode)
+	}
 	_, _ = r.w.Write([]byte(v))
 }
 
@@ -142,7 +150,9 @@ func (r *Render) JSON(v any) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 	}
-	r.w.WriteHeader(r.statusCode)
+	if !r.statusCodeSent {
+		r.w.WriteHeader(r.statusCode)
+	}
 	_, _ = r.w.Write(buf.Bytes())
 }
 
@@ -160,7 +170,9 @@ func (r *Render) JSONP(callback string, v any) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMEApplicationJavaScriptCharsetUTF8)
 	}
-	r.w.WriteHeader(r.statusCode)
+	if !r.statusCodeSent {
+		r.w.WriteHeader(r.statusCode)
+	}
 	_, _ = r.w.Write([]byte(callback + "("))
 	_, _ = r.w.Write(buf.Bytes())
 	_, _ = r.w.Write([]byte(");"))
@@ -180,7 +192,9 @@ func (r *Render) XML(v any) {
 	if !r.contentTypeSet {
 		r.w.Header().Set(HeaderContentType, MIMEApplicationXMLCharsetUTF8)
 	}
-	r.w.WriteHeader(r.statusCode)
+	if !r.statusCodeSent {
+		r.w.WriteHeader(r.statusCode)
+	}
 
 	// Try to find <?xml header in first 100 bytes (just in case there're some XML comments).
 	findHeaderUntil := buf.Len()
@@ -208,7 +222,9 @@ func (r *Render) Stream(step func(w io.Writer) bool) bool {
 		return false
 	}
 
-	r.w.WriteHeader(r.statusCode)
+	if !r.statusCodeSent {
+		r.w.WriteHeader(r.statusCode)
+	}
 
 	for {
 		select {
@@ -247,7 +263,9 @@ func (r *Render) EventStream(v any) {
 		r.w.Header().Set(HeaderConnection, "keep-alive")
 	}
 
-	r.w.WriteHeader(r.statusCode)
+	if !r.statusCodeSent {
+		r.w.WriteHeader(r.statusCode)
+	}
 
 	ctx := r.r.Context()
 	buf := new(strings.Builder)
@@ -301,7 +319,9 @@ func (r *Render) SSEvent(event renderer.SSEvent) {
 		r.w.Header().Set(HeaderConnection, "keep-alive")
 	}
 
-	r.w.WriteHeader(r.statusCode)
+	if !r.statusCodeSent {
+		r.w.WriteHeader(r.statusCode)
+	}
 	_ = renderer.SSEventEncode(r.w, event)
 }
 
@@ -333,7 +353,6 @@ func (r *Render) Download(filepath, filename string) {
 
 // Flush sends any buffered data to the response.
 func (r *Render) Flush() {
-	r.w.WriteHeader(r.statusCode)
 	if f, ok := r.w.(http.Flusher); ok {
 		f.Flush()
 	}
@@ -350,6 +369,7 @@ func (r *Render) Release() {
 	r.w = nil
 	r.r = nil
 	r.contentTypeSet = false
+	r.statusCodeSent = false
 	r.statusCode = http.StatusOK
 	renderPool.Put(r)
 }
