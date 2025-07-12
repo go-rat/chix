@@ -1,10 +1,12 @@
 module github.com/go-rat/chix
 
-go 1.22
+go 1.24
+
+toolchain go1.24.5
 
 require (
 	github.com/go-chi/chi/v5 v5.2.2
-	github.com/gofiber/schema v1.5.0
+	github.com/gofiber/schema v1.6.0
 	github.com/stretchr/testify v1.10.0
 )
 
