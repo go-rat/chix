@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
-	"github.com/go-rat/chix/renderer"
+	"github.com/libtnb/chix/renderer"
 	"io"
 	"net"
 	"net/http"
@@ -15,7 +15,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/go-rat/chix"
+	"github.com/libtnb/chix"
 )
 
 func TestRender_ContentType(t *testing.T) {

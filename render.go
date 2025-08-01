@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/go-rat/chix/renderer"
+	"github.com/libtnb/chix/renderer"
 )
 
 var renderPool = sync.Pool{

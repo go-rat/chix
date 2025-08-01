@@ -15,7 +15,7 @@ import (
     "encoding/json"
     "encoding/xml"
 
-    "github.com/go-rat/chix"
+    "github.com/libtnb/chix"
 )
 
 func init() {

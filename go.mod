@@ -1,4 +1,4 @@
-module github.com/go-rat/chix
+module github.com/libtnb/chix
 
 go 1.24
 

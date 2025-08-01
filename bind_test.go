@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/require"
 
-	"github.com/go-rat/chix"
+	"github.com/libtnb/chix"
 )
 
 func TestBind_HeaderBindsCorrectly(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/go-rat/chix/binder"
+	"github.com/libtnb/chix/binder"
 )
 
 var bindPool = sync.Pool{
